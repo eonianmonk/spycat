@@ -21,7 +21,7 @@ type TargetDb struct {
 	Db *sql.DB
 }
 
-func buildBulkTargetInsertValues(targets []*Target) (string, interface{}) {
+func buildBulkTargetInsertValues(targets []*Target) (string, []interface{}) {
 	b := strings.Builder{}
 	// because target has 6 fields (one of which is id and currently unknown)
 	args := make([]interface{}, 0, 5*len(targets))
@@ -37,6 +37,9 @@ func buildBulkTargetInsertValues(targets []*Target) (string, interface{}) {
 
 // creates targets via provided txs
 func (tdb *TargetDb) CreateMany(targets []*Target, missionId string, tx *sql.Tx) ([]*Target, error) {
+	if len(targets) == 0 {
+		return targets, nil
+	}
 
 	localTx := false
 	var err error
@@ -57,10 +60,10 @@ func (tdb *TargetDb) CreateMany(targets []*Target, missionId string, tx *sql.Tx)
 
 	rows, err := tx.Query(fmt.Sprintf(`
 		INSERT INTO targets (
-			name, country, completion_statust, notes,mission_id
+			name, country, completion_status, notes,mission_id
 		) VALUES %s 
-		RETURNING id,name, country, completion_statust, notes,mission_id;
-	`, valQ), args)
+		RETURNING id,name, country, completion_status, notes, mission_id
+	`, valQ), args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert targets: %s", err)
 	}
@@ -110,14 +113,17 @@ func buildBulkValuesFromMissions(missions []*Mission) (string, []interface{}) {
 }
 
 func (tdb *TargetDb) GetTargetsForMissions(missions []*Mission) error {
+	if len(missions) == 0 {
+		return nil
+	}
 	vals, args := buildBulkValuesFromMissions(missions)
 	rows, err := tdb.Db.Query(fmt.Sprintf(`
 		SELECT 
 			id, name, country, completion_status, notes, mission_id
 		FROM 
 			targets
-		WHERE id IN %s 
-	`, vals), args)
+		WHERE mission_id IN %s 
+	`, vals), args...)
 	if err != nil {
 		return fmt.Errorf("failed to get targets for missions: %s", err)
 	}

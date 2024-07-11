@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/eonianmonk/spycat"
+	"github.com/google/uuid"
 )
 
 type Mission struct {
@@ -20,12 +21,21 @@ type MissionsDb struct {
 
 // function creates a mission in passed tx
 func (mdb *MissionsDb) Create(mission *Mission, tx *sql.Tx) (*Mission, error) {
-	err := tx.QueryRow(`
+	assignedCatId := uuid.NullUUID{Valid: false}
+	var err error
+	if mission.AssignedCatId != "" {
+		assignedCatId.UUID, err = uuid.Parse(mission.AssignedCatId)
+		if err != nil {
+			return nil, fmt.Errorf("invalid assigned cat uuid: %s", err)
+		}
+		assignedCatId.Valid = true
+	}
+	err = tx.QueryRow(`
 		insert into missions (
 			assigned_cat_id, completion_status
 		) values ($1,$2)
 		RETURNING id
-	`, mission.AssignedCatId, mission.Status).Scan(&mission.Id)
+	`, assignedCatId, mission.Status).Scan(&mission.Id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create mission: %s", err)
 	}
@@ -66,7 +76,7 @@ func (mdb *MissionsDb) List(offset, count int) ([]*Mission, error) {
 		FROM
 			missions
 			LIMIT $1 OFFSET $2
-	`, offset, count)
+	`, count, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get list of missions: %s", err)
 	}
@@ -90,12 +100,16 @@ func (mdb *MissionsDb) List(offset, count int) ([]*Mission, error) {
 
 func (mdb *MissionsDb) Get(uuid string) (*Mission, error) {
 	var mission Mission
+	var nullableCatId sql.NullString
 	err := mdb.Db.QueryRow(`
 		SELECT 
 			id, assigned_cat_id, completion_status
 		FROM missions 
 		WHERE id = $1
-	`, uuid).Scan(&mission.Id, &mission.AssignedCatId, &mission.Status)
+	`, uuid).Scan(&mission.Id, &nullableCatId, &mission.Status)
+	if nullableCatId.Valid {
+		mission.AssignedCatId = nullableCatId.String
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to get mission: %s", err)
 	}

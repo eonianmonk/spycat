@@ -58,8 +58,6 @@ create table if not exists targets (
         on DELETE CASCADE
 );
 
-create unique index if not exists targets_mission_id_index
-    on targets (mission_id);
 
 --trigger to not allow deletion if targets count <= 1 
 CREATE OR REPLACE FUNCTION check_min_targets() RETURNS TRIGGER AS $$
@@ -78,7 +76,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-create trigger trg_check_min_targets
+create or replace trigger trg_check_min_targets
 before DELETE on targets
 for each row EXECUTE FUNCTION check_min_targets();
 
@@ -88,7 +86,7 @@ returns trigger as $$
 DECLARE
     tcount INTEGER;
 BEGIN
-    SELECT count(*) as tcount
+    SELECT count(*) into tcount
     FROM targets 
     WHERE mission_id = NEW.mission_id;
     if (tcount >= 3) THEN
@@ -99,7 +97,7 @@ END;
 $$ LANGUAGE PLPGSQL;
 
 
-create trigger trg_check_max_targets
+create or replace trigger trg_check_max_targets
 before INSERT on targets
 for each row EXECUTE FUNCTION check_max_targets();
 
@@ -114,7 +112,7 @@ BEGIN
 END;
 $$ LANGUAGE PLPGSQL;
 
-create trigger trg_check_target_complition
+create or replace trigger trg_check_target_complition
 before DELETE on targets
 for each row EXECUTE FUNCTION check_target_complition();
 
@@ -138,6 +136,6 @@ END;
 $$ LANGUAGE PLPGSQL;
 
 
-create trigger trg_prevent_modifying_notes_on_completed_targets_or_missions
+create or replace trigger trg_prevent_modifying_notes_on_completed_targets_or_missions
 before update on targets
 for each row EXECUTE FUNCTION prevent_modifying_notes_on_completed_targets_or_missions();

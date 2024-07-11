@@ -83,7 +83,7 @@ func GetCat(c *fiber.Ctx) error {
 	cat, err := context.GetDbContext(c).CatsDb.GetCat(id)
 	if err != nil {
 		log.Error(err)
-		return c.SendStatus(fiber.StatusInternalServerError)
+		return c.SendStatus(fiber.StatusNotFound)
 	}
 	return c.JSON(cat)
 }

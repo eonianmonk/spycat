@@ -41,10 +41,10 @@ func ParseListQuery(c *fiber.Ctx) (int, int, error) {
 
 // returns catId,missionId
 func parseCatAssign(c *fiber.Ctx) (string, string, error) {
-	catId := c.Query(CatIdParameter)
-	missionId := c.Query(MissionIdParameter)
+	catId := c.Params(CatIdParameter)
+	missionId := c.Params(MissionIdParameter)
 	if catId == "" || missionId == "" {
-		return "", "", fmt.Errorf("both catId(%s) and missionId(%s) required")
+		return "", "", fmt.Errorf("both catId(%s) and missionId(%s) required", catId, missionId)
 	}
 	return catId, missionId, nil
 }

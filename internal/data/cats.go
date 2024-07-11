@@ -81,7 +81,7 @@ func (cdb *CatsDb) List(offset int, count int) ([]*Cat, error) {
 			cats
 		ORDER BY id 
 		LIMIT $1 OFFSET $2
-	`, offset, count)
+	`, count, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get list of cats: %s", err)
 	}

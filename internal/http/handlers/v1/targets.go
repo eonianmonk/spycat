@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/eonianmonk/spycat"
 	"github.com/eonianmonk/spycat/internal/data"
 	"github.com/eonianmonk/spycat/internal/http/context"
 	"github.com/gofiber/fiber/v2"
@@ -13,6 +14,9 @@ func CreateTarget(c *fiber.Ctx) error {
 	if err != nil {
 		log.Error(err)
 		return c.SendStatus(fiber.StatusBadRequest)
+	}
+	if targetReq.Status == "" {
+		targetReq.Status = spycat.Incomplete
 	}
 	targets, err := context.GetDbContext(c).TargetsDb.CreateMany([]*data.Target{&targetReq}, targetReq.MissionId, nil)
 	if err != nil {
@@ -39,7 +43,6 @@ func DeleteTarget(c *fiber.Ctx) error {
 
 func UpdateTarget(c *fiber.Ctx) error {
 	targetReq := data.Target{}
-	log.Error()
 	err := c.BodyParser(&targetReq)
 	if err != nil {
 		log.Error(err)

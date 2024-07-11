@@ -16,6 +16,9 @@ func rollbackTxs(txs ...*sql.Tx) error {
 	var err error
 	for _, tx := range txs {
 		err = tx.Rollback()
+		if err != nil {
+			break
+		}
 	}
 	return err
 }
@@ -23,13 +26,19 @@ func rollbackTxs(txs ...*sql.Tx) error {
 func errWithRollback(err error, c *fiber.Ctx, txs ...*sql.Tx) error {
 	log.Error(err)
 	errTx := rollbackTxs(txs...)
-	log.Error("failed to revert tx: ", errTx, txs)
+	if errTx != nil {
+		log.Error("failed to revert tx: ", errTx.Error())
+	}
 	return c.SendStatus(fiber.StatusInternalServerError)
 }
 
 // creates mission, can create with targets
 func CreateMissionWithTargets(c *fiber.Ctx) error {
 	var missionReq data.Mission
+	//incomplete  by default
+	if missionReq.Status == "" {
+		missionReq.Status = spycat.Incomplete
+	}
 	err := c.BodyParser(&missionReq)
 	if err != nil {
 		log.Error(err)
@@ -83,6 +92,7 @@ func UpdateMission(c *fiber.Ctx) error {
 		log.Error(err)
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
+	missionReq.Status = spycat.Complete
 	return c.JSON(missionReq)
 }
 
@@ -128,7 +138,7 @@ func GetMission(c *fiber.Ctx) error {
 	mission, err := context.GetDbContext(c).MissionsDb.Get(id)
 	if err != nil {
 		log.Error(err)
-		return c.SendStatus(fiber.StatusInternalServerError)
+		return c.SendStatus(fiber.StatusNotFound)
 	}
 	return c.JSON(mission)
 }
