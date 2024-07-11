@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    #restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: "spycat"
+    networks:
+      - mynetwork
+    volumes:
+      - ./pg-data:/var/lib/postgresql/data
+      - ./internal/data/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+
+networks:
+  mynetwork:
