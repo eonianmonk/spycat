@@ -1,8 +1,18 @@
-FROM golang:1.21.3-alpine
+# Use the official Go 1.22 image as the base image
+FROM golang:1.22-bullseye
 
-WORKDIR /spycat
-COPY . . 
-RUN go mod download
-RUN go build -o spycat-ms
+# Set the working directory inside the container
+WORKDIR /app
 
-CMD [ "/spycat/spycat-ms" ]
+# Copy the Go source code into the container
+COPY . .
+
+# Set the GOARCH environment variable to amd64
+ENV GOARCH=amd64
+
+# Build the Go application
+RUN go build -o spycat
+
+RUN chmod +x spycat
+# Set the entrypoint to run the binary
+ENTRYPOINT ["./spycat"]
